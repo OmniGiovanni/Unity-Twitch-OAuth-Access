@@ -36,7 +36,7 @@ function Access($code, $scope)
   	$Message = encryptData($response,$key,$iv);
  	$Message = str_replace(['+', '/'], ['-', '_'], $Message);
 	$Message = urlencode($Message); // URL encode the entire URL
-    header('Location: http://localhost:3000/?E=' . $Message);
+    header('Location: http://localhost:3000/?data=' . $Message);
     exit;
 }
 

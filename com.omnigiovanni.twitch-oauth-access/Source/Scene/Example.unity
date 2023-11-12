@@ -749,7 +749,6 @@ MonoBehaviour:
   authenticateButton: {fileID: 90830087}
   appAuthentication:
     Scopes: 0
-    scopesString: 
     clientID: Client_Application_ID
     webRedirect: http://www.example.com/
     Data:

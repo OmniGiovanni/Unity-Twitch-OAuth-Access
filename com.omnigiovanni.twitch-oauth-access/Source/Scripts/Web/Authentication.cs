@@ -38,7 +38,7 @@ namespace OmniGiovanni.Web
 			All = ~0
 		}
 		
-		public TwitchOAuthScope Scopes;
+		[SerializeField] private TwitchOAuthScope Scopes;
 	
 		private Thread listenerThread;
 		private HttpListener httpListener;
@@ -69,7 +69,7 @@ namespace OmniGiovanni.Web
 			{ TwitchOAuthScope.whispersEdit, "whispers:edit" }
 		};
 	 
-		public static string GetScopesString(TwitchOAuthScope scopes)
+		private static string GetScopesString(TwitchOAuthScope scopes)
 		{
 			if(scopes == TwitchOAuthScope.None)
 				return null;
@@ -91,7 +91,7 @@ namespace OmniGiovanni.Web
 			listenerThread.Start();
 		}
 	
-		void Listen()
+		private void Listen()
 		{
 			try
 			{
@@ -130,28 +130,24 @@ namespace OmniGiovanni.Web
 			// Handle the request here
 			HttpListenerRequest request = context.Request;
 			HttpListenerResponse response = context.Response;
+			string encryptedData = "null";
 		
 			// Get query parameters
-			string encryptedData = request.QueryString["E"];
-			if (encryptedData != null) {
-			 encryptedData = System.Web.HttpUtility.UrlDecode(encryptedData); // Decode the URL
-			 encryptedData = encryptedData.Replace('-', '+').Replace('_', '/');
-
-			} else {
-			 Debug.LogError("Missing or null 'E' parameter in the request.");
-				return; // Exit the method or take appropriate action.
+			if (request.QueryString.AllKeys.Contains("data"))
+			{
+				encryptedData = request.QueryString["data"];
 			}
 			
-			string key = "your_secret_key_here"; // Same key used in the acess.php script
+			encryptedData = System.Web.HttpUtility.UrlDecode(encryptedData); // Decode the URL
+			encryptedData = encryptedData.Replace('-', '+').Replace('_', '/');		
+			
+			string key = "your_secret_key_here"; // Same key used in the access.php script
 			//
 			key = key.PadRight(32, '\0').Substring(0, 32);
 			byte[] iv = new byte[16];
 			byte[] encryptedBytes = Convert.FromBase64String(encryptedData);
 
 			string decryptedData = Crypto.DecryptData(encryptedBytes, key, iv);
-	
-			// Do something with the parameters.
-			//Debug.Log($"Decrypted Data: {decryptedData}");
 		
 			Data = JsonUtility.FromJson<Response>(decryptedData);
 
@@ -166,9 +162,8 @@ namespace OmniGiovanni.Web
 		
 	
 		}
-	
-	
-		void OnDestroy()
+
+		private void OnDestroy()
 		{
 			// Stop the listener when the script is destroyed
 			if (httpListener != null && httpListener.IsListening)
