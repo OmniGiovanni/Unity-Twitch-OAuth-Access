@@ -1,0 +1,11 @@
+{
+  "name": "com.omnigiovanni.twitch-oauth-access",
+  "version": "1.0.0",
+  "displayName": "Twitch-OAuth-Access",
+  "description": "Twitch authorization code grant flow for Unity3D",
+  "unity": "2020.3",
+  "dependencies": {
+    "com.unity.textmeshpro": "3.0.6"
+  },
+  "unityRelease": "43f1"
+}

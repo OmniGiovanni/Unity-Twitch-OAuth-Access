@@ -1,0 +1,16 @@
+{
+    "name": "OmniGiovanni.Web",
+    "rootNamespace": "OmniGiovanni.Web",
+    "references": [
+        "GUID:17e8b8ae5cd52554488186843f121c50"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
