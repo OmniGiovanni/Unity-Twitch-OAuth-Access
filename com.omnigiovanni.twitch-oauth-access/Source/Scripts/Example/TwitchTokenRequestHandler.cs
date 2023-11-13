@@ -23,6 +23,7 @@ namespace OmniGiovanni.Example
 
 	    private void Start()
 	    {
+	    	
 	    	if(authenticateButton != null)
 			authenticateButton.onClick.AddListener(HandleOAuth);	
 	    }     

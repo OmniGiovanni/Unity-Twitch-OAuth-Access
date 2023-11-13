@@ -14,6 +14,8 @@ public struct Response
 	public string refresh_token;
 	public string[] scope;
 	public string token_type;
+	public string message;
+	public string status;
 }
 
 

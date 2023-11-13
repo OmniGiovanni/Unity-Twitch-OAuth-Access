@@ -16,24 +16,29 @@ namespace OmniGiovanni.Cryptography
 		{
 			return Encoding.UTF8.GetBytes(S);
 		}
-        
-	   	public static string DecryptData(byte[] encryptedData, string key, byte[] iv)
-	    {
-		    using (Aes aesAlg = Aes.Create())
-		    {
-			    aesAlg.Key = Encoding.UTF8.GetBytes(key);
-			    aesAlg.IV = iv;
+		
+		
+		public static string DecryptData(byte[] encryptedData, string key, byte[] iv)
+		{
+			using (Aes aesAlg = Aes.Create())
+			{
+				aesAlg.Key = Encoding.UTF8.GetBytes(key);
+				aesAlg.IV = iv;
 
-			    ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
+				ICryptoTransform decryptor = aesAlg.CreateDecryptor(aesAlg.Key, aesAlg.IV);
 
-			    using (var msDecrypt = new System.IO.MemoryStream(encryptedData))
-				    using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
-					    using (var srDecrypt = new System.IO.StreamReader(csDecrypt))
-					    {
-						    return srDecrypt.ReadToEnd();
-					    }
-		    }
-	    }	             
+				using (var msDecrypt = new MemoryStream(encryptedData))
+				{
+					msDecrypt.Seek(0, SeekOrigin.Begin);
+
+					using (var csDecrypt = new CryptoStream(msDecrypt, decryptor, CryptoStreamMode.Read))
+						using (var srDecrypt = new StreamReader(csDecrypt))
+						{
+							return srDecrypt.ReadToEnd();
+						}
+				}
+			}
+		}	             
         
     }
 }

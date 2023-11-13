@@ -108,9 +108,7 @@ namespace OmniGiovanni.Web
 				Debug.LogError("HttpListenerException: " + e.Message);
 			}
 		}
-	
-	
-	
+
 		private void StopListener()
 		{
 			stopListening = true;
@@ -136,7 +134,7 @@ namespace OmniGiovanni.Web
 			if (request.QueryString.AllKeys.Contains("data"))
 			{
 				encryptedData = request.QueryString["data"];
-			}
+			} 
 			
 			encryptedData = System.Web.HttpUtility.UrlDecode(encryptedData); // Decode the URL
 			encryptedData = encryptedData.Replace('-', '+').Replace('_', '/');		
@@ -145,14 +143,21 @@ namespace OmniGiovanni.Web
 			//
 			key = key.PadRight(32, '\0').Substring(0, 32);
 			byte[] iv = new byte[16];
-			byte[] encryptedBytes = Convert.FromBase64String(encryptedData);
-
+			byte[] encryptedBytes = Convert.FromBase64String(encryptedData);			
+			
 			string decryptedData = Crypto.DecryptData(encryptedBytes, key, iv);
-		
+			
 			Data = JsonUtility.FromJson<Response>(decryptedData);
-
-			// Send a response back to the browser.
-			byte[] buffer = System.Text.Encoding.UTF8.GetBytes(HTML.Page);
+			byte[] buffer;
+			
+			if(Data.status == "400")
+			{
+				buffer = System.Text.Encoding.UTF8.GetBytes(HTML.pageFail);
+			}
+			else
+			{	
+				buffer = System.Text.Encoding.UTF8.GetBytes(HTML.pageComplete);
+			}
 
 			// Write the response.
 			response.ContentLength64 = buffer.Length;
