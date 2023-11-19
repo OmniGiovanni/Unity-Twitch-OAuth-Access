@@ -5,7 +5,11 @@ The Unity+Twitch OAuth Access project offers a simple implementation of the auth
 ## TODO
 
 ~Implement a system for passing a unique state string for each OAuth request.
+~Replace the DecryptData method.
 
+## Known Issues
+
+~Exception during decryption: System.ArgumentException: Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.
 
 ## License
 
