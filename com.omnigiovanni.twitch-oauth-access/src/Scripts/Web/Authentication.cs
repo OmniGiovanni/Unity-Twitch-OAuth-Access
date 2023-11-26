@@ -1,6 +1,5 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-
+﻿using System.Collections.Generic;
+using UnityEngine;
 using System;
 using System.Linq;
 using System.Net;
@@ -8,13 +7,7 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading;
 using System.IO;
-
-using System.Net.Sockets;
-
-using UnityEngine;
-using UnityEngine.Networking;
-
-using OmniGiovanni.Cryptography;
+using System.Text;
 
 namespace OmniGiovanni.Web
 {
@@ -22,7 +15,7 @@ namespace OmniGiovanni.Web
 	[Serializable]
 	public class Authentication
 	{
-		
+	
 		[Flags]
 		public enum TwitchOAuthScope
 		{
@@ -38,22 +31,32 @@ namespace OmniGiovanni.Web
 			All = ~0
 		}
 		
+		//can change this to const when needed.			
+		[SerializeField] private string HostURL = "https://www.example.com/oauth/authenticate?";
 		[SerializeField] private TwitchOAuthScope Scopes;
 	
 		private Thread listenerThread;
 		private HttpListener httpListener;
-		private bool stopListening = false;
 		
-		[SerializeField] private string clientID = "Client_Application_ID";  //Client ID obtained in the dev.twitch.tv.
-		[SerializeField] private string webRedirect = "http://www.example.com/";
-	
-		[SerializeField]Response Data = new Response();
+		public bool stopListening = false;
+
+		[SerializeField]AccessTokenResponse Data = new AccessTokenResponse();	
+		
+		public delegate void RequestEvent();
+		public event RequestEvent requestFinalCallBackEvent;
+		
+		
+		
 		
 		public void Request()
 		{		
-			string authorizationURL = $"https://id.twitch.tv/oauth2/authorize?response_type=code&client_id={(clientID)}&redirect_uri={webRedirect}&scope={GetScopesString(Scopes)}";
-			Application.OpenURL(authorizationURL);
-			StartListener();
+			
+			//Create a provide the localhost a random port to listen on and set it to the expected endpoint URL param.
+			int localport = UnityEngine.Random.Range(25002,60339);
+			string url = $"{HostURL}state={Uri.EscapeDataString(Convert.ToBase64String(System.Guid.NewGuid().ToByteArray()))}&scope={Uri.EscapeDataString(GetScopesString(Scopes))}&endpoint={localport}";
+			Application.OpenURL(url);
+			StartListener(localport);
+			
 		}
 	
 	
@@ -68,6 +71,7 @@ namespace OmniGiovanni.Web
 			{ TwitchOAuthScope.whispersRead, "whispers:read" },
 			{ TwitchOAuthScope.whispersEdit, "whispers:edit" }
 		};
+		
 	 
 		private static string GetScopesString(TwitchOAuthScope scopes)
 		{
@@ -75,39 +79,47 @@ namespace OmniGiovanni.Web
 				return null;
 				
 			string result = string.Join("+", ScopeMappings
-			.Where(kv => scopes.HasFlag(kv.Key))
-			.Select(kv => kv.Value));
-
+				.Where(kv => scopes.HasFlag(kv.Key))
+				.Select(kv => kv.Value));
+		
+		
 			return result;
 		}
 
-		private void StartListener()
+		private void StartListener(int localport)
 		{
+		
 			httpListener = new HttpListener();
-			httpListener.Prefixes.Add("http://localhost:3000/"); // Set your desired prefix
+			httpListener.Prefixes.Add($"http://localhost:{localport}/");
 			httpListener.Start();
 
+			//Create & start a new thread so the main thread remains responsive and doesn't freeze the application.
 			listenerThread = new Thread(Listen);
 			listenerThread.Start();
+		
 		}
-	
+		
+		
 		private void Listen()
 		{
+			
 			try
 			{
-				httpListener.Start();	
+				//	httpListener.Start();	
 				while (!stopListening)
-				{
+				{	
 					// Wait for a request and process it
 					HttpListenerContext context = httpListener.GetContext();
 					ProcessRequest(context);
 				}
 			}
-			catch (HttpListenerException e)
-			{
-				Debug.LogError("HttpListenerException: " + e.Message);
-			}
+				catch (HttpListenerException e)
+				{
+					Debug.LogError("HttpListenerException: " + e.Message);
+				}
 		}
+		
+		
 
 		private void StopListener()
 		{
@@ -128,46 +140,62 @@ namespace OmniGiovanni.Web
 			// Handle the request here
 			HttpListenerRequest request = context.Request;
 			HttpListenerResponse response = context.Response;
-			string encryptedData = "null";
-		
-			// Get query parameters
-			if (request.QueryString.AllKeys.Contains("data"))
-			{
-				encryptedData = request.QueryString["data"];
-			} 
 			
-			encryptedData = System.Web.HttpUtility.UrlDecode(encryptedData); // Decode the URL
-			encryptedData = encryptedData.Replace('-', '+').Replace('_', '/');		
-			
-			string key = "your_secret_key_here"; // Same key used in the access.php script
-			//
-			key = key.PadRight(32, '\0').Substring(0, 32);
-			byte[] iv = new byte[16];
-			byte[] encryptedBytes = Convert.FromBase64String(encryptedData);			
-			
-			string decryptedData = Crypto.DecryptData(encryptedBytes, key, iv);
-			
-			Data = JsonUtility.FromJson<Response>(decryptedData);
-			byte[] buffer;
-			
-			if(Data.status == "400")
-			{
-				buffer = System.Text.Encoding.UTF8.GetBytes(HTML.pageFail);
-			}
-			else
-			{	
-				buffer = System.Text.Encoding.UTF8.GetBytes(HTML.pageComplete);
-			}
+			//CORS headers to allow sites to access resources from any origin "*", with allowed targted "GET, POST, OPTIONS" method requests, and the allow header 'Content-Type'.
+			response.AddHeader("Access-Control-Allow-Origin", "*");
+			response.AddHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+			response.AddHeader("Access-Control-Allow-Headers", "Content-Type");
 
-			// Write the response.
-			response.ContentLength64 = buffer.Length;
-			Stream output = response.OutputStream;
-			output.Write(buffer, 0, buffer.Length);
-			output.Close();
-		
+			try
+			{
+				
+				if(request.QueryString["data"]!=null)
+				{
+				
+					string jsonData = request.QueryString["data"];
+					Data = JsonUtility.FromJson<AccessTokenResponse>(jsonData);
+					
+					if (context.Response.StatusCode == 200)
+					{
+						
+						LocalSuccessResponse LocalSuccessResponce = new LocalSuccessResponse
+						{
+							success = true,
+							message = "Data received and processed successfully."
+						};
+						
+						// Convert the response object to JSON
+						string jsonResponse = JsonUtility.ToJson(LocalSuccessResponce);
+						
+						// Send the JSON response back to the client
+						byte[] buffer = Encoding.UTF8.GetBytes(jsonResponse);
+						response.ContentLength64 = buffer.Length;
+						Stream output = response.OutputStream;
+						output.Write(buffer, 0, buffer.Length);
+						output.Close();
+						
+						//StopListener
+						
+						//TODO: Fix the Double-Calls & Make it so theat the thead joins the main.
+						//For now the StopListener() method acts too early can stops the response OutputStream for the localhost, leaving the webpage dead in its tracks waiting..
+						requestFinalCallBackEvent?.Invoke();
+						
+					}
+					 
+				}else{
+					Debug.Log("invalid data....");	
+					return;
+				}
 	
+			}//
+    catch (Exception ex)
+    {
+	    // Handle the exception, you can log it or take appropriate action.
+	    Debug.LogError($"An error occurred: {ex.Message}");
+    }
+    // You can add finally{} if you want some logic passed after the Response is waiting or something.
 		}
-
+		
 		private void OnDestroy()
 		{
 			// Stop the listener when the script is destroyed
@@ -180,6 +208,3 @@ namespace OmniGiovanni.Web
 	
 	}	
 }
-
-
-

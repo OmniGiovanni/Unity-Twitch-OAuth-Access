@@ -1,17 +1,7 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.UI;
-
 using System;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading.Tasks;
-using TMPro;
 using OmniGiovanni.Web;
-
-
-
 
 namespace OmniGiovanni.Example
 {
@@ -20,18 +10,34 @@ namespace OmniGiovanni.Example
        
 	    [SerializeField] private Button authenticateButton;
 	    [SerializeField] private Authentication appAuthentication = new Authentication();
-
 	    private void Start()
 	    {
 	    	
-	    	if(authenticateButton != null)
-			authenticateButton.onClick.AddListener(HandleOAuth);	
+	    	appAuthentication.requestFinalCallBackEvent += OnAuthenticationCallback; 
+	    	
+	    	if(authenticateButton != null){
+		    	authenticateButton.onClick.AddListener(HandleOAuth);
+	    	}
 	    }     
+	   
 	    
 	    private void HandleOAuth()
 	    {
 		    authenticateButton.interactable = false;
 		    appAuthentication.Request();
+	    }
+	    
+	    
+	    private void OnAuthenticationCallback()
+	    {
+	    
+	    	//TODO: prevent this callback getting called twice for some reason.
+
+	    }
+	    
+	    protected void OnDestroy()
+	    {
+	    	appAuthentication.requestFinalCallBackEvent -= OnAuthenticationCallback; 
 	    }
        
     }
