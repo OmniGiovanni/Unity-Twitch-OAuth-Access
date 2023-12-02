@@ -16,124 +16,35 @@ namespace OmniGiovanni.Web
 	public class Authentication
 	{
 	
-		[Flags]
-		public enum TwitchOAuthScope
-		{
-			None = 0,
-			channelBot = 1 << 0,         
-			channelModerate = 1 << 1,   
-			chatEdit = 1 << 2,         
-			chatRead = 1 << 3,  
-			userBot = 1 << 4,    
-			userReadChat = 1 << 5,   
-			whispersRead = 1 << 6,      
-			whispersEdit = 1 << 7,		
-			All = ~0
-		}
-		
-		//can change this to const when needed.			
-		[SerializeField] private string HostURL = "https://www.example.com/oauth/authenticate?";
-		[SerializeField] private TwitchOAuthScope Scopes;
 	
-		private Thread listenerThread;
+				
+		[SerializeField] private const string HostURL = "https://example.com/oauth/authenticate?";
+		
+		private Scopes scopes = new Scopes();
+		[SerializeField] private Scopes.TwitchOAuthScope scopesList;
+	
+		private AuthThread listenerThread;
 		private HttpListener httpListener;
 		
 		public bool stopListening = false;
 
-		[SerializeField]AccessTokenResponse Data = new AccessTokenResponse();	
+		[SerializeField]AccessTokenResponse Response = new AccessTokenResponse();	
 		
 		public delegate void RequestEvent();
 		public event RequestEvent requestFinalCallBackEvent;
-		
-		
-		
+
 		
 		public void Request()
 		{		
 			
 			//Create a provide the localhost a random port to listen on and set it to the expected endpoint URL param.
 			int localport = UnityEngine.Random.Range(25002,60339);
-			string url = $"{HostURL}state={Uri.EscapeDataString(Convert.ToBase64String(System.Guid.NewGuid().ToByteArray()))}&scope={Uri.EscapeDataString(GetScopesString(Scopes))}&endpoint={localport}";
+			string url = $"{HostURL}state={Uri.EscapeDataString(Convert.ToBase64String(System.Guid.NewGuid().ToByteArray()))}&scope={Uri.EscapeDataString(scopes.ConstuctToString(scopesList))}&endpoint={localport}";
 			Application.OpenURL(url);
-			StartListener(localport);
+			//StartListener(localport);
 			
 		}
-	
-	
-		private static Dictionary<TwitchOAuthScope, string> ScopeMappings = new Dictionary<TwitchOAuthScope, string>
-		{
-			{ TwitchOAuthScope.channelBot, "channel:bot" },
-			{ TwitchOAuthScope.channelModerate, "channel:moderate" },
-			{ TwitchOAuthScope.chatEdit, "chat:edit" },
-			{ TwitchOAuthScope.chatRead, "chat:read" },
-			{ TwitchOAuthScope.userBot, "user:bot" },
-			{ TwitchOAuthScope.userReadChat, "user:read:chat" },
-			{ TwitchOAuthScope.whispersRead, "whispers:read" },
-			{ TwitchOAuthScope.whispersEdit, "whispers:edit" }
-		};
-		
-	 
-		private static string GetScopesString(TwitchOAuthScope scopes)
-		{
-			if(scopes == TwitchOAuthScope.None)
-				return null;
-				
-			string result = string.Join("+", ScopeMappings
-				.Where(kv => scopes.HasFlag(kv.Key))
-				.Select(kv => kv.Value));
-		
-		
-			return result;
-		}
 
-		private void StartListener(int localport)
-		{
-		
-			httpListener = new HttpListener();
-			httpListener.Prefixes.Add($"http://localhost:{localport}/");
-			httpListener.Start();
-
-			//Create & start a new thread so the main thread remains responsive and doesn't freeze the application.
-			listenerThread = new Thread(Listen);
-			listenerThread.Start();
-		
-		}
-		
-		
-		private void Listen()
-		{
-			
-			try
-			{
-				//	httpListener.Start();	
-				while (!stopListening)
-				{	
-					// Wait for a request and process it
-					HttpListenerContext context = httpListener.GetContext();
-					ProcessRequest(context);
-				}
-			}
-				catch (HttpListenerException e)
-				{
-					Debug.LogError("HttpListenerException: " + e.Message);
-				}
-		}
-		
-		
-
-		private void StopListener()
-		{
-			stopListening = true;
-			listenerThread.Join(); // Wait for the listener thread to finish
-			if (httpListener.IsListening)
-			{
-				httpListener.Stop();
-			}
-
-			httpListener.Close();
-			
-			
-		}
 
 		private void ProcessRequest(HttpListenerContext context)
 		{
@@ -153,7 +64,7 @@ namespace OmniGiovanni.Web
 				{
 				
 					string jsonData = request.QueryString["data"];
-					Data = JsonUtility.FromJson<AccessTokenResponse>(jsonData);
+					Response = JsonUtility.FromJson<AccessTokenResponse>(jsonData);
 					
 					if (context.Response.StatusCode == 200)
 					{

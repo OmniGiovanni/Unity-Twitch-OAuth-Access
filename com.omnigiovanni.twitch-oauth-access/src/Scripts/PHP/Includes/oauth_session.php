@@ -56,7 +56,7 @@ if (!empty($scope) && !empty($state))
         // Close cURL session
          curl_close($ch);
 
-            //You can add more check here if needed.
+            //You can add more checks here if needed.
          return $response;
         }
         else 
