@@ -4,7 +4,7 @@ session_start();
 $code = isset($_GET['code']) ? $_GET['code'] : '';
 
 // Assuming the function Access() is defined in the oauth_session.php file
-$required = include('../../../../includes/oauth_session.php');
+$required = include('../../includes/oauth_session.php');
 $rep = Access($code);
 $endpoint = isset($_SESSION['endpoint']) ? $_SESSION['endpoint'] : '';
 ?>

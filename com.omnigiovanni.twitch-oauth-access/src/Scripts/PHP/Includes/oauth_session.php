@@ -12,7 +12,7 @@ $scopesAllowedOnly = array("chat:read"); // Add more scopes that will be compare
 $apiUrl = 'https://id.twitch.tv/oauth2/token';
 $client = "client_id";
 $client_secret = "client_secret";
-$redirect = "redirect_uri";
+$redirect = "redirect_uri"; // OAuth Redirect URL.
 
 
 $state = isset($_SESSION['state']) ? $_SESSION['state'] : '';
